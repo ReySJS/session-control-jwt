@@ -121,7 +121,7 @@ textarea {
   right: 10%;
   background: unset;
   border: unset;
-  color:rgb(54, 119, 169);
+  color: rgb(54, 119, 169);
 }
 
 #logout:hover {
@@ -130,4 +130,29 @@ textarea {
 
 table {
   text-align: center;
+  border: 1px solid #ccc;
+}
+
+tr {
+  padding: 5px;
+}
+
+th,
+td {
+  width: 300px;
+  padding: 5px;
+  border: 1px solid #ccc;
+}
+
+.newuser-content {
+  width: 900px;
+  margin-top: 25px;
+  display: flex;
+}
+.newuser-content p {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }

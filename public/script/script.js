@@ -1,7 +1,5 @@
 $(document).ready(() => {
 
-    const url = "http://localhost:8080"
-
 
     //////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////Login////////////////////////////////////////
@@ -20,6 +18,8 @@ $(document).ready(() => {
             .then(response => response.text())
             .then(res => $("#main").html(res))
             .catch(error => console.log(error));
+
+        // getUsers()
     })
     /////////////////////////////////////Login////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -43,21 +43,23 @@ $(document).ready(() => {
 
     //////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////Send Message/////////////////////////////////////
-    $("#main").on("click", "#send-message", () => {
+    $("#main").on("click", "#submit-newuser", () => {
 
-        const message = {
-            "username": $(".user").html(),
-            "message": $("#input-message").val()
-        }
-
-        fetch('/message', {
+        fetch('/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(message)
+            body: JSON.stringify({
+                "name": $("#newuser-name").val(),
+                "username": $("#newuser-username").val(),
+                "password": $("#newuser-password").val(),
+                "userType": $("#newuser-type").val()
+            })
         })
             .then(response => response.text())
-            .then(res => $("#main").html(res))
+            .then(res => $("#table-users").html(res))
             .catch(error => console.log(error));
+
+        // getUsers()
     })
     /////////////////////////////////Send Message/////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

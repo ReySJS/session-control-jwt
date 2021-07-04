@@ -1,13 +1,12 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
+const jwt = require('jsonwebtoken');
 const path = require("path");
 const app = express();
+const crypto = require('crypto');
 
-app.use(cookieParser());
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 ///////////////////////Middleware route to serve the home page////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
@@ -30,15 +29,19 @@ app.get('/', (req, res, next) => {
 });
 //////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////Middleware route to serve the home page////////////////////////
-const messages = [];
-
-const hackers = [];
-
-const users = [
-    { "username": "rey", "password": "123456789", "token": undefined, "admin": true },
-    { "username": "user1", "password": "123456", "token": undefined, "admin": false },
-    { "username": "user2", "password": "1234", "token": undefined, "admin": false }
-];
+const users =
+    [{
+        "name": "Reinan",
+        "username": "rey",
+        "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+        "userType": "admin"
+    },
+    {
+        "name": "User1",
+        "username": "user1",
+        "password": "481f6cc0511143ccdd7e2d1b1b94faf0a700a8b49cd13922a70b5ae28acaa8c5",
+        "userType": "user"
+    }];
 
 const ret = {};
 
@@ -58,41 +61,45 @@ ret.userErrorPage = `
     <button id="btn-home" class="submit" type="button">Voltar</button>`;
 
 ret.tokenErrorPage = `
-    <h1>Token Inválido</h1>
+    <h1>Usuário não autenticado</h1>
     <button id="btn-home" class="submit" type="button">Voltar</button>`;
 
-ret.messageSent = `
-    <h1>Mensagem Enviada!<br />Responderemos em breve</h1>
-    <button id="btn-home" class="submit" type="submit">Voltar</button>`;
-
 app.get("/home", (req, res) => res.send(ret.homePage));
+
+function getUsers() {
+    let listOfUsers = ''
+
+    for (let i = 0; i < users.length; i++) {
+        listOfUsers += `
+                <tr>
+                    <td>${users[i].name}</td>
+                    <td>${users[i].username}</td>
+                    <td>${users[i].userType}</td>
+                </tr>`
+    }
+
+    return listOfUsers
+}
+
 
 app.post("/login", (req, res) => {
     res.setHeader('Content-Type', 'text/html');
 
-    const username = req.body.username.toLowerCase();
-    const password = req.body.password;
+    const username = req.body.username
+    const password = crypto
+        .createHash("sha256")
+        .update(req.body.password)
+        .digest("hex");
 
-    const userFilter = users.filter(data => data.username === username && data.password === password);
-    const user = userFilter[0];
+    const userFinded = users.filter((data) => data.username === username && data.password === password)
 
-    if (!user) {
+    if (!userFinded[0]) {
         res.send(ret.userErrorPage);
-        return false;
+        return
     }
 
-    res.cookie('username', username, { maxAge: 900000, httpOnly: true });
+    if (userFinded[0].userType === "admin") {
 
-    if (user.admin) {
-        let adminResultMessages = ''
-
-        for (let i = 0; i < messages.length; i++) {
-            adminResultMessages += `
-                <tr>
-                    <td>${messages[i].username}</td>
-                    <td>${messages[i].message}</td>
-                </tr>`
-        }
 
         const adminResultPage = `
             <h1>Página do administrador</h1>
@@ -101,49 +108,82 @@ app.post("/login", (req, res) => {
             <table>
                 <thead>
                     <tr>
-                        <th>Usuário</th>
-                        <th>Mensagem</th>
+                        <th>Nome</th>
+                        <th>Nome de Usuário</th>
+                        <th>Tipo de Usuário</th>
                     </tr>
                 </thead>
-                <tbody>
-                ${adminResultMessages}
+                <tbody id="table-users">
+                ${getUsers()}
                 </tbody>
-            </table>`;
+            </table>
+
+            <div class="newuser-content">
+                <p>
+                <label for="newuser-name">Nome</label>
+                <input id="newuser-name" name="newuser-name" type="text" />
+                </p>
+                <p>
+                    <label for="newuser-username">Nome de Usuário</label>
+                    <input id="newuser-username" name="newuser-username" type="text" />
+                </p>
+                <p>
+                    <label for="newuser-password">Senha</label>
+                    <input id="newuser-password" name="newuser-password" type="password" />
+                </p>
+                <p>
+                    <label for="newuser-type">Tipo</label>
+                    <select name="newuser-type" id="newuser-type">
+                        <option value="admin">Admin</option>
+                        <option value="user">User</option>
+                    </select>
+                </p>
+            </div>
+            <button type="button" class="submit" id="submit-newuser">Cadastrar</button>`;
 
         return res.send(adminResultPage);
-    } else {
 
+    } else {
         const userResultPage = `
             <h1>Página do usuário</h1>
             <h2>Seja bem-vindo <span class="user">${username}</span ></h2>
             <button id="logout" type="button">Sair</button>              
-            <p class="textarea-content">
-                <label for="input-message">Mensagem: </label>
-                <textarea id="input-message" rows="10" cols="30" name="message"></textarea>
-            </p>
-            <button id="send-message" class="submit" type="button">Enviar</button>`;
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Nome de Usuário</th>
+                        <th>Tipo de Usuário</th>
+                    </tr>
+                </thead>
+                <tbody id="table-users">
+                ${getUsers()}
+                </tbody>
+            </table>`;
 
         return res.send(userResultPage);
     }
 });
 
-app.post("/message", (req, res) => {
+app.post("/signup", (req, res) => {
 
-    const usernameCookie = req.cookies.username;
-    if (!usernameCookie) {
-        res.status(403).send('ret.tokenErrorPage')
-        // res.send(e)
+
+    // if (!usernameCookie) {
+    //     res.status(403).send('ret.tokenErrorPage')
+    // }
+
+    const newUser = {
+        "name": req.body.name,
+        "username": req.body.username,
+        "password": crypto
+            .createHash("sha256")
+            .update(req.body.password)
+            .digest("hex"),
+        "userType": req.body.userType
     }
 
-    const username = req.body.username;
-    const message = req.body.message;
-    const newMessage = { username, message }
-
-    const userFilter = users.filter(data => data.username === username);
-    const user = userFilter[0];
-
-    messages.push(newMessage);
-    return res.send(ret.messageSent);
+    users.push(newUser)
+    res.send(getUsers());
 });
 
 app.post("/logout", (req, res) => {
@@ -155,7 +195,6 @@ app.post("/logout", (req, res) => {
     const user = userFilter[0];
 
     if (!user) {
-        hackers.push(username);
         res.send(ret.tokenErrorPage);
         return false;
     }
