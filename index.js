@@ -128,7 +128,6 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/message", (req, res) => {
-    // res.setHeader('Content-Type', 'text/html');
 
     const usernameCookie = req.cookies.username;
     if (!usernameCookie) {
