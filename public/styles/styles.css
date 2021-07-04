@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 * {
   margin: 0;
   padding: 0;
@@ -15,7 +16,7 @@ body,
 button,
 input,
 label {
-  font: 400 20px sans-serif;
+  font: 400 20px 'Roboto', sans-serif;
 }
 
 body {
@@ -43,7 +44,8 @@ p {
   margin-bottom: 25px;
 }
 
-input {
+input,
+select {
   width: 200px;
   height: 40px;
   padding: 5px 10px;
@@ -56,6 +58,14 @@ input {
 input::placeholder {
   padding-left: 10px;
   color: rgb(180, 196, 208);
+}
+
+.input-content {
+  display: flex;
+  flex-direction: column;
+}
+.input-content label {
+  color: rgb(24, 34, 41);
 }
 
 button.submit {
@@ -85,6 +95,15 @@ button.submit:hover {
     flex-direction: column;
 } */
 
+#login-status {
+  width: 350px;
+  height: 50px;
+  margin-top: 25px;
+  font-size: 16px;
+  color: rgb(214, 89, 89);
+  text-align: center;
+}
+
 h1,
 h2 {
   text-align: center;
@@ -95,24 +114,6 @@ span.user {
   font-size: 48px;
   color: rgb(54, 119, 169);
   text-transform: capitalize;
-}
-
-p.textarea-content {
-  margin-top: 25px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-p.textarea-content label {
-  margin-bottom: 10px;
-}
-
-textarea {
-  resize: none;
-  padding: 10px;
-  font-size: 24px;
-  color: rgb(54, 119, 169);
 }
 
 #logout {

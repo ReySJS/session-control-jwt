@@ -5,21 +5,27 @@ $(document).ready(() => {
     /////////////////////////////////////Login////////////////////////////////////////
     $("#main").on("click", "#btn-login", () => {
 
-        const user = {
-            "username": $("#input-username").val(),
-            "password": $("#input-password").val()
-        }
+        const username = $("#input-username").val()
+        const password = $("#input-password").val()
 
         fetch('/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user)
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + btoa(`${username}:${password}`),
+            }
         })
-            .then(response => response.text())
+            .then(response => {
+                if (response.status !== 200) {
+                    $("#login-status").html("Não reconhecemos esta combinação de nome de usuário e senha")
+                    return
+                } else {
+                    return response.text()
+                }
+            })
             .then(res => $("#main").html(res))
-            .catch(error => console.log(error));
+            .catch(error => console.log(error))
 
-        // getUsers()
     })
     /////////////////////////////////////Login////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +48,7 @@ $(document).ready(() => {
 
 
     //////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////Send Message/////////////////////////////////////
+    ///////////////////////////////////New User///////////////////////////////////////
     $("#main").on("click", "#submit-newuser", () => {
 
         fetch('/signup', {
@@ -59,25 +65,24 @@ $(document).ready(() => {
             .then(res => $("#table-users").html(res))
             .catch(error => console.log(error));
 
-        // getUsers()
+        $(".input-user").val('')
     })
-    /////////////////////////////////Send Message/////////////////////////////////////
+    ///////////////////////////////////New User///////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
 
     //////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////Send Message/////////////////////////////////////
+    /////////////////////////////////////Logout///////////////////////////////////////
     $("#main").on("click", "#logout", () => {
 
         fetch('/logout', {
-            method: 'POST',
+            method: 'GET',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ "username": $(".user").html() })
         })
             .then(response => response.text())
             .then(res => $("#main").html(res))
             .catch(error => console.log(error));
     })
-    /////////////////////////////////Send Message/////////////////////////////////////
+    /////////////////////////////////////Logout///////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 })

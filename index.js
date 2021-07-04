@@ -1,10 +1,12 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const jwt = require('jsonwebtoken');
-const path = require("path");
-const app = express();
-const crypto = require('crypto');
+import path from 'path';
+import express from 'express';
+import crypto from 'crypto';
+import cookieParser from 'cookie-parser';
+import * as jwt from './jwt.js'
 
+const app = express();
+
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -29,76 +31,91 @@ app.get('/', (req, res, next) => {
 });
 //////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////Middleware route to serve the home page////////////////////////
-const users =
-    [{
-        "name": "Reinan",
-        "username": "rey",
-        "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
-        "userType": "admin"
-    },
-    {
-        "name": "User1",
-        "username": "user1",
-        "password": "481f6cc0511143ccdd7e2d1b1b94faf0a700a8b49cd13922a70b5ae28acaa8c5",
-        "userType": "user"
-    }];
-
-const ret = {};
-
-ret.homePage = `
-    <p>
-        <label for="input-username">Username: </label>
-        <input type="text" name="username" id="input-username" />
-    </p>
-    <p>
-        <label for="input-password">Password: </label>
-        <input type="password" name="password" id="input-password" />
-    </p>
-    <button class="submit" type="button" id="btn-login">Entrar</button>`;
-
-ret.userErrorPage = `
-    <h1>Usuário não encontrado</h1>
-    <button id="btn-home" class="submit" type="button">Voltar</button>`;
-
-ret.tokenErrorPage = `
-    <h1>Usuário não autenticado</h1>
-    <button id="btn-home" class="submit" type="button">Voltar</button>`;
-
-app.get("/home", (req, res) => res.send(ret.homePage));
+const users = {}
+users.rey = { "name": "Reinan", "username": "rey", "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", "userType": "admin" }
+users.user1 = { "name": "User1", "username": "user1", "password": "8d23cf6c86e834a7aa6eded54c26ce2bb2e74903538c61bdd5d2197997ab2f72", "userType": "user" }
 
 function getUsers() {
     let listOfUsers = ''
 
     for (let i = 0; i < users.length; i++) {
         listOfUsers += `
-                <tr>
-                    <td>${users[i].name}</td>
-                    <td>${users[i].username}</td>
-                    <td>${users[i].userType}</td>
-                </tr>`
+                    <tr>
+                        <td>${users[i].name}</td>
+                        <td>${users[i].username}</td>
+                        <td>${users[i].userType}</td>
+                    </tr>`
     }
 
     return listOfUsers
 }
 
+const ret = {};
 
-app.post("/login", (req, res) => {
-    res.setHeader('Content-Type', 'text/html');
+ret.homePage = `
+    <p class="input-content">
+        <label for="input-username">Usuário:</label>
+        <input type="text" name="username" id="input-username" />
+    </p>
+    <p class="input-content">
+        <label for="input-password">Senha:</label>
+        <input type="password" name="password" id="input-password" />
+    </p>
+    <button class="submit" type="button" id="btn-login">Entrar</button>
+    <p id="login-status"></p>`;
 
-    const username = req.body.username
-    const password = crypto
+const authMiddleware = async (req, res, next) => {
+    const token = req.cookies["session-id"];
+
+    console.log(token)
+
+    try {
+        const payload = await jwt.verify(token)
+        const userFilter = users.filter(data => data.username === payload.username)
+        const user = userFilter[0]
+
+        if (!user) {
+            return res.send(401)
+        }
+
+        req.auth = user
+
+        next()
+    } catch (error) {
+        res.send(401, error)
+    }
+}
+
+app.get("/home", (req, res) => res.send(ret.homePage));
+
+app.get("/login", (req, res) => {
+
+    const [, hash] = req.headers.authorization.split(' ')
+    const [username, password] = Buffer.from(hash, 'base64').toString().split(':')
+
+    const passwordHash = crypto
         .createHash("sha256")
-        .update(req.body.password)
+        .update(password)
         .digest("hex");
 
-    const userFinded = users.filter((data) => data.username === username && data.password === password)
+    res.setHeader('Content-Type', 'text/html');
 
-    if (!userFinded[0]) {
-        res.send(ret.userErrorPage);
-        return
+    if (!users[username]) {
+        return res.send(401, "Usuário não cadastrado")
     }
 
-    if (userFinded[0].userType === "admin") {
+    if(users[username].password !== passwordHash) {
+        return res.send(401, "Senha inválida")
+    }
+
+
+    // if (!user) {
+    //     return res.send(401, null)
+    // }
+
+    const token = jwt.sign({ username: user.username, type: user.userType })
+
+    if (user.userType === "admin") {
 
 
         const adminResultPage = `
@@ -121,26 +138,25 @@ app.post("/login", (req, res) => {
             <div class="newuser-content">
                 <p>
                 <label for="newuser-name">Nome</label>
-                <input id="newuser-name" name="newuser-name" type="text" />
+                <input id="newuser-name" class="input-user" name="newuser-name" type="text" />
                 </p>
                 <p>
                     <label for="newuser-username">Nome de Usuário</label>
-                    <input id="newuser-username" name="newuser-username" type="text" />
+                    <input id="newuser-username" class="input-user" name="newuser-username" type="text" />
                 </p>
                 <p>
                     <label for="newuser-password">Senha</label>
-                    <input id="newuser-password" name="newuser-password" type="password" />
+                    <input id="newuser-password" class="input-user" name="newuser-password" type="password" />
                 </p>
                 <p>
                     <label for="newuser-type">Tipo</label>
                     <select name="newuser-type" id="newuser-type">
-                        <option value="admin">Admin</option>
                         <option value="user">User</option>
+                        <option value="admin">Admin</option>
                     </select>
                 </p>
             </div>
             <button type="button" class="submit" id="submit-newuser">Cadastrar</button>`;
-
         return res.send(adminResultPage);
 
     } else {
@@ -165,14 +181,9 @@ app.post("/login", (req, res) => {
     }
 });
 
-app.post("/signup", (req, res) => {
+app.post("/signup", authMiddleware, (req, res) => {
 
-
-    // if (!usernameCookie) {
-    //     res.status(403).send('ret.tokenErrorPage')
-    // }
-
-    const newUser = {
+   users[req.body.username] = {
         "name": req.body.name,
         "username": req.body.username,
         "password": crypto
@@ -181,26 +192,12 @@ app.post("/signup", (req, res) => {
             .digest("hex"),
         "userType": req.body.userType
     }
-
-    users.push(newUser)
     res.send(getUsers());
 });
 
-app.post("/logout", (req, res) => {
+app.get("/logout", authMiddleware, (req, res) => {
     res.setHeader('Content-Type', 'text/html');
 
-    const username = req.body.username;
-
-    const userFilter = users.filter(data => data.username === username);
-    const user = userFilter[0];
-
-    if (!user) {
-        res.send(ret.tokenErrorPage);
-        return false;
-    }
-
-    // const findUserToken = users.findIndex(value => value === user);
-    // users[findUserToken].token = undefined
     return res.send(ret.homePage);
 });
 
