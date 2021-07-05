@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto&display=swap");
 * {
   margin: 0;
   padding: 0;
@@ -16,7 +16,7 @@ body,
 button,
 input,
 label {
-  font: 400 20px 'Roboto', sans-serif;
+  font: 400 20px "Roboto", sans-serif;
 }
 
 body {
@@ -32,11 +32,27 @@ button {
 }
 
 #main {
-  width: 80%;
-  height: 80%;
+  width: 100%;
+  height: 90%;
+  display: flex;
+}
+
+.login-content,
+.user-content {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+}
+
+#main .admin-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -95,11 +111,12 @@ button.submit:hover {
     flex-direction: column;
 } */
 
-#login-status {
+#login-status,
+#signup-status {
   width: 350px;
   height: 50px;
   margin-top: 25px;
-  font-size: 16px;
+  font-size: 18px;
   color: rgb(214, 89, 89);
   text-align: center;
 }

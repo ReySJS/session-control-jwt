@@ -1,3 +1,1 @@
-{
-    
-}
+{"error":[{"name":"JsonWebTokenError","message":"jwt must be provided"},{"name":"JsonWebTokenError","message":"invalid token"},{"name":"JsonWebTokenError","message":"jwt malformed"},{},{}]}

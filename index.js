@@ -56,6 +56,7 @@ function getUsers() {
 const ret = {};
 
 ret.homePage = `
+    <div class="login-content">
     <p class="input-content">
         <label for="input-username">Usuário:</label>
         <input type="text" name="username" id="input-username" />
@@ -65,36 +66,42 @@ ret.homePage = `
         <input type="password" name="password" id="input-password" />
     </p>
     <button class="submit" type="button" id="btn-login">Entrar</button>
-    <p id="login-status"></p>`;
+    <p id="login-status"></p>
+    </div>`;
 
 const authMiddleware = async (req, res, next) => {
     const token = req.cookies["session-id"];
-    
+
     try {
         const payload = await jwt.verify(token)
-        const user = users[payload.username]
+        const user = await users[payload.username]
+
 
         if (!user) {
-            return res.send(401)
+            return res.status(401).send("Falha na autenticação do usuário")
         }
 
-        req.auth = user
+        req.auth = {
+            name: user.name,
+            username: user.username,
+            userType: user.userType
+        }
 
         next()
     } catch (error) {
 
-        res.status(401)
-
-        fs.readFile('data/log.json', 'utf8', function readFileCallback(err, data) {
+        fs.readFile('data/log.json', 'utf8', (err, data) => {
             if (err) {
                 console.log(err);
             } else {
                 const buffer = JSON.parse(data);
-                buffer.Push(error);
-                const json = JSON.stringify(buffer);
-                fs.writeFile('data/log.json', json, 'utf8', callback);
+                buffer.error.push(error);
+                fs.writeFile('data/log.json', JSON.stringify(buffer), (err) => { });
             }
         });
+
+        res.cookie("session-id").status(401).send("Falha na autenticação do usuário")
+
     }
 }
 
@@ -126,69 +133,79 @@ app.get("/login", (req, res) => {
     if (user.userType === "admin") {
 
         const adminResultPage = `
-            <h1>Página do administrador</h1>
-            <h2>Seja bem-vindo <span class="user">${username}</span ></h2>
-            <button id="logout" type="button">Sair</button>  
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Nome de Usuário</th>
-                        <th>Tipo de Usuário</th>
-                    </tr>
-                </thead>
-                <tbody id="table-users">
-                ${getUsers()}
-                </tbody>
-            </table>
+            <div class="admin-content">
+                <h1>Página do administrador</h1>
+                <h2>Seja bem-vindo <span class="user">${username}</span ></h2>
+                <button id="logout" type="button">Sair</button>  
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Nome de Usuário</th>
+                            <th>Tipo de Usuário</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-users">
+                    ${getUsers()}
+                    </tbody>
+                </table>
 
-            <div class="newuser-content">
-                <p>
-                <label for="newuser-name">Nome</label>
-                <input id="newuser-name" class="input-user" name="newuser-name" type="text" />
-                </p>
-                <p>
-                    <label for="newuser-username">Nome de Usuário</label>
-                    <input id="newuser-username" class="input-user" name="newuser-username" type="text" />
-                </p>
-                <p>
-                    <label for="newuser-password">Senha</label>
-                    <input id="newuser-password" class="input-user" name="newuser-password" type="password" />
-                </p>
-                <p>
-                    <label for="newuser-type">Tipo</label>
-                    <select name="newuser-type" id="newuser-type">
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </p>
-            </div>
-            <button type="button" class="submit" id="submit-newuser">Cadastrar</button>`;
+                <div class="newuser-content">
+                    <p>
+                    <label for="newuser-name">Nome</label>
+                    <input id="newuser-name" class="input-user" name="newuser-name" type="text" />
+                    </p>
+                    <p>
+                        <label for="newuser-username">Nome de Usuário</label>
+                        <input id="newuser-username" class="input-user" name="newuser-username" type="text" />
+                    </p>
+                    <p>
+                        <label for="newuser-password">Senha</label>
+                        <input id="newuser-password" class="input-user" name="newuser-password" type="password" />
+                    </p>
+                    <p>
+                        <label for="newuser-type">Tipo</label>
+                        <select name="newuser-type" id="newuser-type">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </p>
+                </div>
+                <button type="button" class="submit" id="submit-newuser">Cadastrar</button>
+                <p id="signup-status"></p>
+                </div>`;
+
         return res.send(adminResultPage);
 
     } else {
         const userResultPage = `
-            <h1>Página do usuário</h1>
-            <h2>Seja bem-vindo <span class="user">${username}</span ></h2>
-            <button id="logout" type="button">Sair</button>              
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Nome de Usuário</th>
-                        <th>Tipo de Usuário</th>
-                    </tr>
-                </thead>
-                <tbody id="table-users">
-                ${getUsers()}
-                </tbody>
-            </table>`;
+            <div class="user-content">
+                <h1>Página do usuário</h1>
+                <h2>Seja bem-vindo <span class="user">${username}</span ></h2>
+                <button id="logout" type="button">Sair</button>              
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Nome de Usuário</th>
+                            <th>Tipo de Usuário</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-users">
+                    ${getUsers()}
+                    </tbody>
+                </table>
+            </div>`;
 
         return res.send(userResultPage);
     }
 });
 
 app.post("/signup", authMiddleware, (req, res) => {
+
+    if (!req.body.username || !req.body.name || !req.body.password || !req.body.userType) {
+        return res.status(406).send("Insira os dados para cadastrar o novo usuário")
+    }
 
     users[req.body.username] = {
         "name": req.body.name,
@@ -199,13 +216,17 @@ app.post("/signup", authMiddleware, (req, res) => {
             .digest("hex"),
         "userType": req.body.userType
     }
+
     res.send(getUsers());
 });
 
-app.get("/logout", (req, res) => {
-    res.setHeader('Content-Type', 'text/html');
+app.post("/logout", (req, res) => {
 
-    return res.redirect('/');
+    return res.cookie("session-id").redirect('/');
 });
+
+app.get("/me", authMiddleware, (req, res) => {
+    res.send(req.auth)
+})
 
 app.listen(80);
