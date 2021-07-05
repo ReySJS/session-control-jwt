@@ -1,5 +1,6 @@
 import path from 'path';
 import express from 'express';
+import fs from 'fs';
 import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 import * as jwt from './jwt.js'
@@ -31,23 +32,25 @@ app.get('/', (req, res, next) => {
 });
 //////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////Middleware route to serve the home page////////////////////////
-const users = {}
+let users = {}
 users.rey = { "name": "Reinan", "username": "rey", "password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", "userType": "admin" }
 users.user1 = { "name": "User1", "username": "user1", "password": "8d23cf6c86e834a7aa6eded54c26ce2bb2e74903538c61bdd5d2197997ab2f72", "userType": "user" }
 
-function getUsers() {
-    let listOfUsers = ''
 
-    for (let i = 0; i < users.length; i++) {
-        listOfUsers += `
+function getUsers() {
+
+    let userList = ''
+
+    for (let i = 0; i < Object.keys(users).length; i++) {
+        userList += `
                     <tr>
-                        <td>${users[i].name}</td>
-                        <td>${users[i].username}</td>
-                        <td>${users[i].userType}</td>
+                        <td>${users[Object.keys(users)[i]].name}</td>
+                        <td>${users[Object.keys(users)[i]].username}</td>
+                        <td>${users[Object.keys(users)[i]].userType}</td>
                     </tr>`
     }
 
-    return listOfUsers
+    return userList
 }
 
 const ret = {};
@@ -66,13 +69,10 @@ ret.homePage = `
 
 const authMiddleware = async (req, res, next) => {
     const token = req.cookies["session-id"];
-
-    console.log(token)
-
+    
     try {
         const payload = await jwt.verify(token)
-        const userFilter = users.filter(data => data.username === payload.username)
-        const user = userFilter[0]
+        const user = users[payload.username]
 
         if (!user) {
             return res.send(401)
@@ -82,7 +82,19 @@ const authMiddleware = async (req, res, next) => {
 
         next()
     } catch (error) {
-        res.send(401, error)
+
+        res.status(401)
+
+        fs.readFile('data/log.json', 'utf8', function readFileCallback(err, data) {
+            if (err) {
+                console.log(err);
+            } else {
+                const buffer = JSON.parse(data);
+                buffer.Push(error);
+                const json = JSON.stringify(buffer);
+                fs.writeFile('data/log.json', json, 'utf8', callback);
+            }
+        });
     }
 }
 
@@ -98,25 +110,20 @@ app.get("/login", (req, res) => {
         .update(password)
         .digest("hex");
 
-    res.setHeader('Content-Type', 'text/html');
+    const user = users[username]
 
-    if (!users[username]) {
-        return res.send(401, "Usuário não cadastrado")
+    if (!user) {
+        return res.status(401).send("Usuário não cadastrado")
     }
 
-    if(users[username].password !== passwordHash) {
-        return res.send(401, "Senha inválida")
+    if (user.password !== passwordHash) {
+        return res.status(401).send("Senha inválida")
     }
-
-
-    // if (!user) {
-    //     return res.send(401, null)
-    // }
 
     const token = jwt.sign({ username: user.username, type: user.userType })
+    res.cookie("session-id", token)
 
     if (user.userType === "admin") {
-
 
         const adminResultPage = `
             <h1>Página do administrador</h1>
@@ -183,7 +190,7 @@ app.get("/login", (req, res) => {
 
 app.post("/signup", authMiddleware, (req, res) => {
 
-   users[req.body.username] = {
+    users[req.body.username] = {
         "name": req.body.name,
         "username": req.body.username,
         "password": crypto
@@ -195,10 +202,10 @@ app.post("/signup", authMiddleware, (req, res) => {
     res.send(getUsers());
 });
 
-app.get("/logout", authMiddleware, (req, res) => {
+app.get("/logout", (req, res) => {
     res.setHeader('Content-Type', 'text/html');
 
-    return res.send(ret.homePage);
+    return res.redirect('/');
 });
 
 app.listen(80);
