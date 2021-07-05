@@ -14,22 +14,7 @@ app.use(express.json());
 ///////////////////////Middleware route to serve the home page////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 app.use(express.static('public'));
-app.get('/', (req, res, next) => {
 
-    const options = {
-        root: path.join(__dirname + '/public/')
-    };
-
-    res.sendFile('index.html', options, (err) => {
-        if (err) {
-            console.log(err);
-            next(err);
-        } else {
-            console.log('Sent:', fileName);
-            next();
-        }
-    });
-});
 //////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////Middleware route to serve the home page////////////////////////
 let users = {}
@@ -104,6 +89,24 @@ const authMiddleware = async (req, res, next) => {
 
     }
 }
+// app.use(authMiddleware)
+
+app.get('/', (req, res, next) => {
+
+    const options = {
+        root: path.join(__dirname + '/public/')
+    };
+
+    res.sendFile('index.html', options, (err) => {
+        if (err) {
+            console.log(err);
+            next(err);
+        } else {
+            console.log('Sent:', fileName);
+            next();
+        }
+    });
+});
 
 app.get("/home", (req, res) => res.send(ret.homePage));
 
